@@ -22,20 +22,26 @@ def isnumeric(value):
 	global currencyvar
 	return str(value).replace(",","").replace(".", "").replace("-", "").replace(currencyvar, "").strip().isdigit()
 
+class Transaction(object):
+	def __init__(self, date, text):
+		self.date = date
+		self.text = text
+
 def parseCSV(fn,debitheaders,accountheaders,notef,datef):
 	f = open(fn, 'rb')
 	reader = csv.DictReader(f)
-	transaction = ""
+	transactions = []
 	for item in reader:
-		transaction = transaction + myNewLine() + ProcessEntry(item,debitheaders,accountheaders,notef,datef)
+		transactions.append(ProcessEntry(item,debitheaders,accountheaders,notef,datef))
 	f.close()
-	return transaction
+	transactions = sorted(transactions, key=lambda t:t.date)
+	return (myNewLine() + myNewLine()).join([t.text for t in transactions])
 
 def checkDate(mstr):
 	try:
-	 	return parse(mstr).strftime('%Y/%m/%d')
+		return parse(mstr)
 	except Exception as inst:
-		return datetime.date.today().isoformat().replace('-','/')
+		return datetime.date.today()
 
 amtre = re.compile(r'({0}?)(-?)({0}?)([0-9.]*)'.format(r'\$' if currencyvar == '$' else currencyvar))
 
@@ -66,7 +72,8 @@ def ProcessEntry(item,dheader,accts,notefields,datef):
 		noteline = ' '.join(noteline)
 	
 	if item.has_key(datef) and len(datef)>0:
-		dateline = checkDate(item[datef].strip())
+		date = checkDate(item[datef])
+		dateline = date.strftime('%Y/%m/%d')
 	else:
 		currentdate = datetime.date.today().isoformat().replace('-','/').strip()
 		dateline = currentdate
@@ -82,7 +89,7 @@ def ProcessEntry(item,dheader,accts,notefields,datef):
 	transaction = startline
 	for s in accounts:
 		transaction = transaction + myNewLine() + "\t" + s.strip()
-	return transaction
+	return Transaction(date, transaction)
 
 def isCSV(myfile):
 	if os.path.isfile(os.path.expanduser(myfile)):
@@ -147,7 +154,6 @@ def main():
 		sys.exit()
 	
 	lfields = split_arg(options.fields)
-	print(lfields)
 	
 	if len(options.openfile)>0:
 		csvfile = isCSV(options.openfile)
@@ -157,7 +163,7 @@ def main():
 	
 	notefield = split_arg(options.notefield)
 	
-	transactions = parseCSV(csvfile,lfields,laccounts,notefield,options.datefield).strip()
+	transactions = parseCSV(csvfile,lfields,laccounts,notefield,options.datefield)
 	
 	if len(options.savefile)>0:
 		SaveFile(transactions,options.savefile)
