@@ -22,8 +22,6 @@ def isnumeric(value):
 	return str(value).replace(",","").replace(".", "").replace("-", "").replace(currencyvar, "").strip().isdigit()
 
 def parseCSV(fn,debitheaders,accountheaders,notef,datef):
-	notef = notef
-	datef = datef
 	f = open(fn, 'rb')
 	reader = csv.DictReader(f)
 	transaction = ""
@@ -43,11 +41,15 @@ def ProcessEntry(item,dheader,accts,notef,datef):
 	accounts = accts[:]
 	startline = ''
 	dateline = ''
-	noteline = ''
-	if item.has_key(notef) and len(notef)>0:
-		noteline = item[notef].strip()
-	else:
+	noteline = []
+	
+	for notef in notefields:
+		if item.has_key(notef):
+			noteline.append(item[notef].strip())
+	if noteline == []:
 		noteline = 'Transaction'
+	else:
+		noteline = ' '.join(noteline)
 	
 	if item.has_key(datef) and len(datef)>0:
 		dateline = checkDate(item[datef].strip())
@@ -134,8 +136,10 @@ def main():
 	else:
 		print 'You must specify a file to open'
 		sys.exit()
-		
-	transactions = parseCSV(csvfile,lfields,laccounts,options.notefield,options.datefield).strip()
+	
+	notefield = split_arg(options.notefield)
+	
+	transactions = parseCSV(csvfile,lfields,laccounts,notefield,options.datefield).strip()
 	
 	if len(options.savefile)>0:
 		SaveFile(transactions,options.savefile)
