@@ -49,7 +49,7 @@ def format_amount(s, negate=False):
 	s = s.strip()
 	match = amtre.match(s)
 	if match:
-		minus_sign = '-' if bool(match.group(2)) ^ negate else ''
+		minus_sign = '-' if (bool(match.group(2)) ^ negate) and s else ''
 		return '{0}{1}{2}'.format(minus_sign, currencyvar, match.group(4))
 	elif negate:
 		return "(" + s + " * (-1))"
